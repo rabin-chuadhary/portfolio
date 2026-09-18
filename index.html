@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>ePasal — Your local marketplace</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'], display: ['Manrope', 'Inter', 'sans-serif'] },
+          colors: { brand: { 50:'#eef2ff',100:'#e0e7ff',500:'#6366f1',600:'#4f46e5',700:'#4338ca' } },
+          boxShadow: { soft:'0 2px 15px -3px rgba(0,0,0,0.07)', card:'0 1px 3px rgba(0,0,0,0.04),0 4px 12px rgba(0,0,0,0.03)', elevated:'0 10px 40px -10px rgba(0,0,0,0.1)' }
+        }
+      }
+    }
+  </script>
+  <style>
+    body{font-family:Inter,system-ui,sans-serif;background:#fafafa}
+    .font-display{font-family:Manrope,Inter,sans-serif}
+    .no-scrollbar::-webkit-scrollbar{display:none}
+    .no-scrollbar{-ms-overflow-style:none;scrollbar-width:none}
+    .map-grid{background-image:linear-gradient(rgba(99,102,241,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,0.04) 1px,transparent 1px);background-size:32px 32px}
+    @keyframes pulse-soft{0%,100%{opacity:1}50%{opacity:.55}}
+    .animate-pulse-soft{animation:pulse-soft 2s ease-in-out infinite}
+  </style>
+</head>
+<body class="bg-neutral-50 text-neutral-900 antialiased">
+<div id="root"></div>
+<script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.26.2/babel.min.js"></script>
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, createContext, useContext } = React;
+
+const LOCATIONS = [
+  { id:'dhangadhi', name:'Dhangadhi', district:'Kailali' },
+  { id:'attariya', name:'Attariya', district:'Kailali' },
+  { id:'godawari', name:'Godawari', district:'Kailali' },
+  { id:'mahendranagar', name:'Mahendranagar', district:'Kanchanpur' },
+];
+
+const SELLERS = [
+  { id:'s1', name:'New Star Sports', category:'Sports & Fitness', rating:4.8, reviews:124, distance:0.8, open:true, openUntil:'8:00 PM', delivery:true, pickup:true, image:'https://images.unsplash.com/photo-1556906781-9a412961c28c?w=400&h=300&fit=crop', address:'Main Road, Dhangadhi', phone:'9848XXXXXX', about:'Your local sports destination since 2015.' },
+  { id:'s2', name:'Mobile World', category:'Electronics', rating:4.6, reviews:89, distance:1.2, open:true, openUntil:'9:00 PM', delivery:true, pickup:true, image:'https://images.unsplash.com/photo-1556656793-08538906a9f8?w=400&h=300&fit=crop', address:'Hasanpur, Dhangadhi', phone:'9801XXXXXX', about:'Latest mobiles, accessories and repair.' },
+  { id:'s3', name:'Seti Electronics', category:'Electronics', rating:4.7, reviews:56, distance:2.1, open:true, openUntil:'7:30 PM', delivery:true, pickup:true, image:'https://images.unsplash.com/photo-1498049794561-7780e7231661?w=400&h=300&fit=crop', address:'Attariya Chowk', phone:'9841XXXXXX', about:'Home appliances and electronics.' },
+  { id:'s4', name:'Fresh Mart Grocery', category:'Grocery', rating:4.5, reviews:210, distance:0.5, open:true, openUntil:'10:00 PM', delivery:true, pickup:true, image:'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=400&h=300&fit=crop', address:'Campus Road, Dhangadhi', phone:'9842XXXXXX', about:'Daily fresh vegetables and essentials.' },
+  { id:'s5', name:'Fashion Hub', category:'Fashion', rating:4.4, reviews:67, distance:1.5, open:false, openUntil:'Opens 10 AM', delivery:false, pickup:true, image:'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&h=300&fit=crop', address:'New Road, Dhangadhi', phone:'9806XXXXXX', about:'Trendy clothing for the whole family.' },
+  { id:'s6', name:'Ramesh Auto Service', category:'Mechanic', rating:4.9, reviews:178, distance:1.2, open:true, openUntil:'6:00 PM', delivery:false, pickup:false, image:'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=400&h=300&fit=crop', address:'Near Bus Park, Dhangadhi', phone:'9849XXXXXX', about:'Bike and scooter specialist.' },
+];
+
+const PRODUCTS = [
+  { id:'p1', name:'Nike Football Boots', price:4500, originalPrice:5200, sellerId:'s1', category:'Sports', image:'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&h=600&fit=crop', rating:4.7, reviews:34, stock:8, deliveryTime:'30–60 min', description:'Professional football boots with excellent grip. Sizes 40–44.' },
+  { id:'p2', name:'20W iPhone Charger', price:1499, originalPrice:1899, sellerId:'s2', category:'Electronics', image:'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=600&h=600&fit=crop', rating:4.5, reviews:89, stock:25, deliveryTime:'20–40 min', description:'Original-quality fast charger for iPhone 12 and above.' },
+  { id:'p3', name:'Fast Charger 65W', price:899, sellerId:'s2', category:'Electronics', image:'https://images.unsplash.com/photo-1625948515291-69613efd103f?w=600&h=600&fit=crop', rating:4.6, reviews:52, stock:40, deliveryTime:'20–40 min', description:'GaN fast charger for phones and laptops.' },
+  { id:'p4', name:'USB-C Cable 1m', price:450, sellerId:'s2', category:'Electronics', image:'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=600&fit=crop', rating:4.3, reviews:120, stock:60, deliveryTime:'20–40 min', description:'Durable braided USB-C cable.' },
+  { id:'p5', name:'Cricket Bat English Willow', price:6500, sellerId:'s1', category:'Sports', image:'https://images.unsplash.com/photo-1531415079811-2e2f1e8a2c2c?w=600&h=600&fit=crop', rating:4.8, reviews:21, stock:5, deliveryTime:'45–90 min', description:'Grade 1 English willow cricket bat.' },
+  { id:'p6', name:'Samsung Galaxy Buds', price:8900, sellerId:'s3', category:'Electronics', image:'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=600&h=600&fit=crop', rating:4.6, reviews:45, stock:12, deliveryTime:'40–70 min', description:'Wireless earbuds with ANC.' },
+  { id:'p7', name:'Football Size 5', price:1800, sellerId:'s1', category:'Sports', image:'https://images.unsplash.com/photo-1614632537423-1e6c2e7e0aeb?w=600&h=600&fit=crop', rating:4.4, reviews:67, stock:30, deliveryTime:'30–60 min', description:'Official size 5 match football.' },
+  { id:'p8', name:'Basmati Rice 5kg', price:950, sellerId:'s4', category:'Grocery', image:'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=600&h=600&fit=crop', rating:4.7, reviews:156, stock:100, deliveryTime:'25–45 min', description:'Premium long-grain basmati.' },
+  { id:'p9', name:'Wireless Mouse', price:799, sellerId:'s3', category:'Electronics', image:'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=600&h=600&fit=crop', rating:4.2, reviews:38, stock:22, deliveryTime:'40–70 min', description:'Ergonomic wireless mouse.' },
+  { id:'p10', name:'Yoga Mat Premium', price:1200, sellerId:'s1', category:'Sports', image:'https://images.unsplash.com/photo-1601925260368-ae2f83cf8b7f?w=600&h=600&fit=crop', rating:4.5, reviews:29, stock:15, deliveryTime:'30–60 min', description:'Extra thick non-slip yoga mat.' },
+];
+
+const RENTALS = [
+  { id:'r1', name:'Honda XR 150', price:1500, unit:'day', category:'Bikes', image:'https://images.unsplash.com/photo-1558981806-ec527fa84c39?w=600&h=400&fit=crop', location:'Dhangadhi', distance:1.1, rating:4.8, available:true, owner:'Suresh Thapa' },
+  { id:'r2', name:'Projector + Screen', price:800, unit:'day', category:'Equipment', image:'https://images.unsplash.com/photo-1478720568477-152d9b164e26?w=600&h=400&fit=crop', location:'Attariya', distance:2.4, rating:4.6, available:true, owner:'Event Solutions' },
+  { id:'r3', name:'Room near Attariya', price:8000, unit:'month', category:'Rooms', image:'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=600&h=400&fit=crop', location:'Attariya', distance:3.2, rating:4.5, available:true, owner:'Laxmi Devi' },
+  { id:'r4', name:'DSLR Camera Kit', price:1200, unit:'day', category:'Cameras', image:'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600&h=400&fit=crop', location:'Dhangadhi', distance:0.9, rating:4.9, available:true, owner:'Photo Studio Seti' },
+  { id:'r5', name:'Car – Suzuki Alto', price:3500, unit:'day', category:'Cars', image:'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=600&h=400&fit=crop', location:'Dhangadhi', distance:1.8, rating:4.7, available:false, owner:'Himalayan Rentals' },
+  { id:'r6', name:'Sound System', price:2000, unit:'day', category:'Events', image:'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&h=400&fit=crop', location:'Godawari', distance:4.1, rating:4.4, available:true, owner:'DJ Raju' },
+];
+
+const SERVICES = [
+  { id:'sv1', name:'Ramesh Auto Service', role:'Bike Mechanic', rating:4.9, reviews:178, distance:1.2, available:true, image:'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=400&h=300&fit=crop', tags:['Bike','Scooter','Quick'], priceFrom:300 },
+  { id:'sv2', name:'Bikash Electrician', role:'Electrician', rating:4.7, reviews:92, distance:0.9, available:true, image:'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=400&h=300&fit=crop', tags:['Wiring','Repair'], priceFrom:500 },
+  { id:'sv3', name:'Sunita Tutoring', role:'Tutor (Math & Science)', rating:4.8, reviews:45, distance:1.5, available:true, image:'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=400&h=300&fit=crop', tags:['Class 8–12','Home'], priceFrom:400 },
+  { id:'sv4', name:'Prakash Photography', role:'Photographer', rating:4.9, reviews:67, distance:2.0, available:true, image:'https://images.unsplash.com/photo-1554048612-b6a482bc67e5?w=400&h=300&fit=crop', tags:['Wedding','Event'], priceFrom:5000 },
+  { id:'sv5', name:'Hari Plumber', role:'Plumber', rating:4.6, reviews:110, distance:1.3, available:false, image:'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=400&h=300&fit=crop', tags:['Leak','Emergency'], priceFrom:400 },
+  { id:'sv6', name:'Anil Graphic Designer', role:'Designer', rating:4.5, reviews:28, distance:0.7, available:true, image:'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=400&h=300&fit=crop', tags:['Logo','Social Media'], priceFrom:1500 },
+];
+
+const ORDERS = [
+  { id:'EP10284', status:'rider_assigned', items:[{name:'20W iPhone Charger', price:1499, qty:1}], total:1649, seller:'Mobile World', rider:{name:'Prakash', rating:4.9, vehicle:'Bike'}, eta:'25 min', placedAt:'2026-09-10T10:30:00' },
+  { id:'EP10271', status:'delivered', items:[{name:'Nike Football Boots', price:4500, qty:1}], total:4650, seller:'New Star Sports', rider:{name:'Suman', rating:4.8, vehicle:'Bike'}, eta:null, placedAt:'2026-09-08T15:20:00' },
+];
+
+const formatPrice = n => `Rs. ${n.toLocaleString('en-NP')}`;
+const cn = (...c) => c.filter(Boolean).join(' ');
+
+const AppContext = createContext();
+function AppProvider({ children }) {
+  const [page, setPage] = useState('home');
+  const [params, setParams] = useState({});
+  const [location, setLocation] = useState(LOCATIONS[0]);
+  const [cart, setCart] = useState([]);
+  const [favorites, setFavorites] = useState([]);
+  const [user, setUser] = useState(null);
+  const [notifications, setNotifications] = useState([
+    { id:1, title:'Order accepted', body:'Mobile World accepted your order #EP10284', time:'2 min ago', read:false },
+    { id:2, title:'New message', body:'Ramesh Auto Service: Bike is ready', time:'1 hr ago', read:false },
+    { id:3, title:'Delivery nearby', body:'Your order is 1.2 km away', time:'Yesterday', read:true },
+  ]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showLoc, setShowLoc] = useState(false);
+  const [showAuth, setShowAuth] = useState(false);
+
+  const navigate = (p, pr={}) => { setPage(p); setParams(pr); window.scrollTo({top:0,behavior:'smooth'}); };
+  const addToCart = (prod, qty=1) => {
+    setCart(prev => {
+      const ex = prev.find(i => i.id === prod.id);
+      if (ex) return prev.map(i => i.id === prod.id ? {...i, qty:i.qty+qty} : i);
+      return [...prev, {...prod, qty}];
+    });
+  };
+  const updateQty = (id, qty) => {
+    if (qty <= 0) setCart(p => p.filter(i => i.id !== id));
+    else setCart(p => p.map(i => i.id === id ? {...i, qty} : i));
+  };
+  const removeFromCart = id => setCart(p => p.filter(i => i.id !== id));
+  const toggleFav = id => setFavorites(p => p.includes(id) ? p.filter(f => f !== id) : [...p, id]);
+  const cartTotal = cart.reduce((s,i) => s + i.price * i.qty, 0);
+  const cartCount = cart.reduce((s,i) => s + i.qty, 0);
+
+  return (
+    <AppContext.Provider value={{ page, params, navigate, location, setLocation, cart, addToCart, updateQty, removeFromCart, cartTotal, cartCount, favorites, toggleFav, user, setUser, notifications, setNotifications, searchQuery, setSearchQuery, showLoc, setShowLoc, showAuth, setShowAuth }}>
+      {children}
+    </AppContext.Provider>
+  );
+}
+const useApp = () => useContext(AppContext);
+const Icon = ({ name, size=20, className='' }) => {
+  const paths = {
+    search: <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>,
+    mapPin: <><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></>,
+    user: <><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></>,
+    bag: <><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></>,
+    home: <><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></>,
+    compass: <><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></>,
+    package: <><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></>,
+    msg: <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>,
+    bell: <><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></>,
+    heart: <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>,
+    star: <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>,
+    chevronR: <polyline points="9 18 15 12 9 6"/>,
+    chevronL: <polyline points="15 18 9 12 15 6"/>,
+    x: <><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>,
+    plus: <><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></>,
+    minus: <line x1="5" y1="12" x2="19" y2="12"/>,
+    check: <polyline points="20 6 9 17 4 12"/>,
+    phone: <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/>,
+    clock: <><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></>,
+    key: <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>,
+    tool: <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/>,
+    bike: <><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/><path d="M15 6a1 1 0 100-2 1 1 0 000 2zm-3 11.5V14l-3-3 4-3 2 3h3"/></>,
+    settings: <><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></>,
+    barChart: <><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></>,
+    logOut: <><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></>,
+    arrowR: <><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></>,
+    nav: <polygon points="3 11 22 2 13 21 11 13 3 11"/>,
+    store: <><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></>,
+    users: <><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></>,
+    camera: <><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></>,
+  };
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      {paths[name] || paths.search}
+    </svg>
+  );
+};
+
+function Btn({ children, variant='primary', size='md', className='', onClick, disabled }) {
+  const base = 'inline-flex items-center justify-center font-medium transition-all duration-200 rounded-xl focus:outline-none disabled:opacity-50';
+  const variants = {
+    primary: 'bg-brand-600 text-white hover:bg-brand-700 shadow-sm',
+    secondary: 'bg-white text-neutral-900 border border-neutral-200 hover:bg-neutral-50',
+    ghost: 'text-neutral-600 hover:bg-neutral-100',
+    dark: 'bg-neutral-900 text-white hover:bg-neutral-800',
+    outline: 'border border-neutral-300 text-neutral-700 hover:bg-neutral-50',
+  };
+  const sizes = { sm:'px-3 py-1.5 text-sm gap-1.5', md:'px-4 py-2.5 text-sm gap-2', lg:'px-6 py-3.5 text-base gap-2', xl:'px-8 py-4 text-base gap-2' };
+  return <button className={cn(base, variants[variant], sizes[size], className)} onClick={onClick} disabled={disabled}>{children}</button>;
+}
+
+function Badge({ children, color='gray' }) {
+  const c = { gray:'bg-neutral-100 text-neutral-600', green:'bg-emerald-50 text-emerald-700', blue:'bg-brand-50 text-brand-700', amber:'bg-amber-50 text-amber-700', red:'bg-red-50 text-red-700' };
+  return <span className={cn('inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium', c[color])}>{children}</span>;
+}
+
+function Stars({ rating, size=12 }) {
+  return (
+    <div className="flex items-center gap-0.5">
+      {[1,2,3,4,5].map(i => <Icon key={i} name="star" size={size} className={i <= Math.round(rating) ? 'text-amber-400 fill-amber-400' : 'text-neutral-200'} />)}
+    </div>
+  );
+}
+
+function ProductCard({ product }) {
+  const { favorites, toggleFav, addToCart, navigate } = useApp();
+  const seller = SELLERS.find(s => s.id === product.sellerId);
+  const isFav = favorites.includes(product.id);
+  return (
+    <div className="group bg-white rounded-2xl border border-neutral-100 overflow-hidden shadow-card hover:shadow-elevated transition-all duration-300 cursor-pointer" onClick={() => navigate('product', {id: product.id})}>
+      <div className="relative aspect-square overflow-hidden bg-neutral-100">
+        <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
+        <button onClick={e => { e.stopPropagation(); toggleFav(product.id); }} className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 flex items-center justify-center shadow-sm">
+          <Icon name="heart" size={15} className={isFav ? 'text-red-500 fill-red-500' : 'text-neutral-400'} />
+        </button>
+        {product.originalPrice && <span className="absolute top-3 left-3 bg-brand-600 text-white text-xs font-semibold px-2 py-0.5 rounded-md">-{Math.round((1-product.price/product.originalPrice)*100)}%</span>}
+      </div>
+      <div className="p-3.5">
+        <p className="text-xs text-neutral-500 mb-0.5">{seller?.name} · {seller?.distance} km</p>
+        <h3 className="font-medium text-neutral-900 line-clamp-2 mb-1 leading-snug text-sm">{product.name}</h3>
+        <div className="flex items-center gap-1 mb-1.5"><Stars rating={product.rating} /><span className="text-xs text-neutral-400">({product.reviews})</span></div>
+        <div className="flex items-center justify-between">
+          <div>
+            <span className="font-semibold text-neutral-900 text-sm">{formatPrice(product.price)}</span>
+            {product.originalPrice && <span className="text-xs text-neutral-400 line-through ml-1">{formatPrice(product.originalPrice)}</span>}
+          </div>
+          <button onClick={e => { e.stopPropagation(); addToCart(product); }} className="w-7 h-7 rounded-full bg-brand-50 text-brand-600 flex items-center justify-center hover:bg-brand-100"><Icon name="plus" size={14} /></button>
+        </div>
+      </div>
+    </div>
+  );
+}
+function Navbar() {
+  const { navigate, page, location, cartCount, setShowLoc, setShowAuth, user, notifications } = useApp();
+  const unread = notifications.filter(n => !n.read).length;
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => { const fn = () => setScrolled(window.scrollY > 16); window.addEventListener('scroll', fn); return () => window.removeEventListener('scroll', fn); }, []);
+  const links = [{id:'home',label:'Home'},{id:'explore',label:'Explore'},{id:'rent',label:'Rent'},{id:'hire',label:'Services'},{id:'find',label:'Nearby'}];
+  return (
+    <header className={cn('sticky top-0 z-50 transition-all duration-300', scrolled ? 'bg-white/90 backdrop-blur-lg border-b border-neutral-100 shadow-sm' : 'bg-transparent')}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
+        <button onClick={() => navigate('home')} className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center text-white font-bold text-sm">e</div>
+          <span className="font-display font-bold text-xl tracking-tight">ePasal</span>
+        </button>
+        <nav className="hidden lg:flex items-center gap-1">
+          {links.map(l => (
+            <button key={l.id} onClick={() => navigate(l.id)} className={cn('px-4 py-2 rounded-lg text-sm font-medium transition', page===l.id ? 'text-brand-600 bg-brand-50' : 'text-neutral-600 hover:bg-neutral-50')}>{l.label}</button>
+          ))}
+        </nav>
+        <div className="flex items-center gap-1">
+          <button onClick={() => setShowLoc(true)} className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-neutral-600 hover:bg-neutral-100">
+            <Icon name="mapPin" size={15} className="text-brand-600" /><span className="font-medium">{location.name}</span>
+          </button>
+          <button onClick={() => navigate('search')} className="p-2.5 rounded-lg text-neutral-600 hover:bg-neutral-100"><Icon name="search" size={19} /></button>
+          <button onClick={() => navigate('notifications')} className="relative p-2.5 rounded-lg text-neutral-600 hover:bg-neutral-100">
+            <Icon name="bell" size={19} />{unread>0 && <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />}
+          </button>
+          <button onClick={() => navigate('cart')} className="relative p-2.5 rounded-lg text-neutral-600 hover:bg-neutral-100">
+            <Icon name="bag" size={19} />
+            {cartCount>0 && <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-brand-600 text-white text-xs font-semibold rounded-full flex items-center justify-center">{cartCount}</span>}
+          </button>
+          <button onClick={() => user ? navigate('profile') : setShowAuth(true)} className="p-2.5 rounded-lg text-neutral-600 hover:bg-neutral-100"><Icon name="user" size={19} /></button>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function MobileNav() {
+  const { page, navigate, cartCount } = useApp();
+  const items = [{id:'home',icon:'home',label:'Home'},{id:'explore',icon:'compass',label:'Explore'},{id:'orders',icon:'package',label:'Orders'},{id:'messages',icon:'msg',label:'Messages'},{id:'profile',icon:'user',label:'Profile'}];
+  return (
+    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-neutral-100">
+      <div className="flex items-center justify-around h-16">
+        {items.map(item => (
+          <button key={item.id} onClick={() => navigate(item.id)} className={cn('flex flex-col items-center gap-0.5 w-16 py-1', page===item.id ? 'text-brand-600' : 'text-neutral-400')}>
+            <div className="relative"><Icon name={item.icon} size={21} />{item.id==='orders' && cartCount>0 && <span className="absolute -top-1 -right-2 w-4 h-4 bg-brand-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center">{cartCount}</span>}</div>
+            <span className="text-[10px] font-medium">{item.label}</span>
+          </button>
+        ))}
+      </div>
+    </nav>
+  );
+}
+
+function LocationModal() {
+  const { showLoc, setShowLoc, location, setLocation } = useApp();
+  if (!showLoc) return null;
+  return (
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowLoc(false)} />
+      <div className="relative bg-white rounded-t-3xl sm:rounded-2xl w-full max-w-md p-6 shadow-elevated">
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="font-display font-semibold text-lg">Select location</h2>
+          <button onClick={() => setShowLoc(false)} className="p-1.5 rounded-lg hover:bg-neutral-100"><Icon name="x" size={18} /></button>
+        </div>
+        <div className="space-y-2">
+          {LOCATIONS.map(loc => (
+            <button key={loc.id} onClick={() => { setLocation(loc); setShowLoc(false); }} className={cn('w-full flex items-center gap-3 p-3.5 rounded-xl border text-left transition', location.id===loc.id ? 'border-brand-500 bg-brand-50' : 'border-neutral-100 hover:border-neutral-200')}>
+              <div className={cn('w-10 h-10 rounded-full flex items-center justify-center', location.id===loc.id ? 'bg-brand-100 text-brand-600' : 'bg-neutral-100 text-neutral-500')}><Icon name="mapPin" size={17} /></div>
+              <div><p className="font-medium">{loc.name}</p><p className="text-sm text-neutral-500">{loc.district}</p></div>
+              {location.id===loc.id && <Icon name="check" size={17} className="ml-auto text-brand-600" />}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AuthModal() {
+  const { showAuth, setShowAuth, setUser } = useApp();
+  const [step, setStep] = useState('phone');
+  const [phone, setPhone] = useState('');
+  const [otp, setOtp] = useState('');
+  if (!showAuth) return null;
+  return (
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowAuth(false)} />
+      <div className="relative bg-white rounded-t-3xl sm:rounded-2xl w-full max-w-md p-6 shadow-elevated">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="font-display font-semibold text-lg">Welcome to ePasal</h2>
+          <button onClick={() => setShowAuth(false)} className="p-1.5 rounded-lg hover:bg-neutral-100"><Icon name="x" size={18} /></button>
+        </div>
+        {step==='phone' ? (
+          <>
+            <p className="text-sm text-neutral-500 mb-4">Enter your mobile number</p>
+            <div className="flex gap-2 mb-6">
+              <div className="flex items-center px-3 bg-neutral-50 border border-neutral-200 rounded-xl text-sm text-neutral-600">+977</div>
+              <input type="tel" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g,'').slice(0,10))} placeholder="98XXXXXXXX" className="flex-1 px-4 py-3 border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-base" />
+            </div>
+            <Btn size="lg" className="w-full" onClick={() => phone.length>=10 && setStep('otp')} disabled={phone.length<10}>Continue</Btn>
+            <p className="mt-4 text-center text-sm text-neutral-500">Continue with Google</p>
+          </>
+        ) : (
+          <>
+            <p className="text-sm text-neutral-500 mb-4">Code sent to +977 {phone}</p>
+            <input type="text" value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g,'').slice(0,6))} placeholder="• • • • • •" className="w-full px-4 py-3 border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-center text-xl tracking-widest mb-6" />
+            <Btn size="lg" className="w-full" onClick={() => { setUser({name:'You', phone}); setShowAuth(false); setStep('phone'); }} disabled={otp.length<6}>Verify</Btn>
+            <button onClick={() => setStep('phone')} className="mt-4 w-full text-sm text-neutral-500">Change number</button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+function HomePage() {
+  const { navigate, location, setShowLoc, searchQuery, setSearchQuery } = useApp();
+  const nearby = SELLERS.filter(s => s.distance < 3).slice(0,4);
+  return (
+    <div className="pb-24 lg:pb-12">
+      <section className="relative pt-8 pb-14 lg:pt-14 lg:pb-20 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-brand-50/50 via-white to-white pointer-events-none" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          <div className="max-w-3xl mx-auto text-center">
+            <p className="text-sm font-medium text-brand-600 mb-3 tracking-wide uppercase">Your local marketplace</p>
+            <h1 className="font-display font-extrabold text-4xl sm:text-5xl lg:text-6xl tracking-tight text-neutral-900 leading-[1.1] mb-4">WHAT DO YOU NEED?</h1>
+            <p className="text-lg text-neutral-500 max-w-xl mx-auto mb-7 leading-relaxed">From the shop around the corner to the service you need right now — discover it nearby.</p>
+            <div className="relative max-w-xl mx-auto mb-5">
+              <div className="flex items-center bg-white rounded-2xl shadow-soft border border-neutral-100 overflow-hidden">
+                <div className="pl-4 text-neutral-400"><Icon name="search" size={19} /></div>
+                <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} onKeyDown={e => e.key==='Enter' && navigate('search')} placeholder="Search products, shops, services..." className="flex-1 px-3 py-3.5 text-base outline-none bg-transparent" />
+                <button onClick={() => navigate('search')} className="m-1.5 px-5 py-2.5 bg-brand-600 text-white rounded-xl text-sm font-medium hover:bg-brand-700">Search</button>
+              </div>
+            </div>
+            <button onClick={() => setShowLoc(true)} className="inline-flex items-center gap-1.5 text-sm text-neutral-500 hover:text-brand-600 mb-10">
+              <Icon name="mapPin" size={15} className="text-brand-600" /><span className="font-medium text-neutral-700">{location.name}, {location.district}</span><Icon name="chevronR" size={13} />
+            </button>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 max-w-3xl mx-auto">
+              {[
+                {id:'explore',label:'BUY',desc:'Products nearby',icon:'bag',color:'bg-blue-50 text-blue-600'},
+                {id:'rent',label:'RENT',desc:'Rooms, vehicles & more',icon:'key',color:'bg-violet-50 text-violet-600'},
+                {id:'hire',label:'HIRE',desc:'Local service providers',icon:'tool',color:'bg-amber-50 text-amber-600'},
+                {id:'find',label:'FIND',desc:'Discover around you',icon:'compass',color:'bg-emerald-50 text-emerald-600'},
+              ].map(a => (
+                <button key={a.id} onClick={() => navigate(a.id)} className="group bg-white rounded-2xl border border-neutral-100 p-5 text-left shadow-card hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-300">
+                  <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center mb-3', a.color)}><Icon name={a.icon} size={20} /></div>
+                  <h3 className="font-display font-bold text-lg text-neutral-900 mb-0.5">{a.label}</h3>
+                  <p className="text-sm text-neutral-500">{a.desc}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-10 lg:py-14">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-end justify-between mb-6">
+            <div><h2 className="font-display font-bold text-2xl sm:text-3xl">Around You</h2><p className="text-neutral-500 mt-0.5">Nearby in {location.name}</p></div>
+            <button onClick={() => navigate('find')} className="text-sm font-medium text-brand-600 flex items-center gap-1">View map <Icon name="arrowR" size={15} /></button>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
+            {nearby.map(s => (
+              <div key={s.id} onClick={() => navigate('seller',{id:s.id})} className="bg-white rounded-2xl border border-neutral-100 overflow-hidden shadow-card hover:shadow-elevated transition cursor-pointer flex">
+                <img src={s.image} alt="" className="w-24 h-24 object-cover flex-shrink-0" />
+                <div className="p-3 flex-1 min-w-0">
+                  <div className="flex justify-between gap-1"><h3 className="font-medium text-sm truncate">{s.name}</h3><Badge color={s.open?'green':'gray'}>{s.open?'Open':'Closed'}</Badge></div>
+                  <p className="text-xs text-neutral-500">{s.category}</p>
+                  <div className="flex items-center gap-1 mt-1"><Stars rating={s.rating} size={11} /><span className="text-xs text-neutral-500">{s.rating}</span></div>
+                  <p className="text-xs text-neutral-500 mt-1">{s.distance} km {s.delivery && '· Delivery'}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="relative h-44 rounded-2xl overflow-hidden border border-neutral-100 bg-brand-50 map-grid">
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-center">
+                <div className="w-11 h-11 rounded-full bg-brand-600 text-white flex items-center justify-center mx-auto mb-2 shadow-lg animate-pulse-soft"><Icon name="mapPin" size={20} /></div>
+                <p className="text-sm font-medium text-neutral-700">You are here · {location.name}</p>
+                <p className="text-xs text-neutral-500">{nearby.length} places nearby</p>
+              </div>
+            </div>
+            <div className="absolute top-1/4 left-1/4 w-2.5 h-2.5 bg-brand-500 rounded-full border-2 border-white shadow" />
+            <div className="absolute top-1/3 right-1/3 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white shadow" />
+            <div className="absolute bottom-1/3 left-1/2 w-2.5 h-2.5 bg-amber-500 rounded-full border-2 border-white shadow" />
+          </div>
+        </div>
+      </section>
+
+      <section className="py-10 lg:py-14 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-end justify-between mb-6">
+            <div><h2 className="font-display font-bold text-2xl sm:text-3xl">Popular nearby</h2><p className="text-neutral-500 mt-0.5">Fast delivery from local stores</p></div>
+            <button onClick={() => navigate('explore')} className="text-sm font-medium text-brand-600 flex items-center gap-1">See all <Icon name="arrowR" size={15} /></button>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+            {PRODUCTS.slice(0,5).map(p => <ProductCard key={p.id} product={p} />)}
+          </div>
+        </div>
+      </section>
+
+      <section className="py-14 lg:py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-6">
+            {[
+              {n:'01',t:'What do you need?',d:'Products, rentals, services or discovery.'},
+              {n:'02',t:'Your location',d:'We focus on what’s around you.'},
+              {n:'03',t:'Discover nearby',d:'Real shops, real people, real distances.'},
+              {n:'04',t:'Buy · Rent · Hire · Find',d:'Four simple ways to get what you need.'},
+              {n:'05',t:'Delivered or meet locally',d:'Fast delivery or pickup — your choice.'},
+            ].map((item,i) => (
+              <div key={i}><span className="font-display font-bold text-3xl text-brand-100">{item.n}</span><h3 className="font-semibold text-neutral-900 mt-1.5 mb-0.5">{item.t}</h3><p className="text-sm text-neutral-500 leading-relaxed">{item.d}</p></div>
+            ))}
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function ExplorePage() {
+  const [filter, setFilter] = useState('All');
+  const cats = ['All','Electronics','Sports','Grocery','Fashion'];
+  const list = filter==='All' ? PRODUCTS : PRODUCTS.filter(p => p.category===filter);
+  return (
+    <div className="pb-24 lg:pb-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-7">
+        <h1 className="font-display font-bold text-3xl mb-1">Buy nearby</h1>
+        <p className="text-neutral-500 mb-6">Products from local stores</p>
+        <div className="flex gap-2 overflow-x-auto no-scrollbar mb-6">
+          {cats.map(c => <button key={c} onClick={() => setFilter(c)} className={cn('px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition', filter===c ? 'bg-neutral-900 text-white' : 'bg-white border border-neutral-200 text-neutral-600')}>{c}</button>)}
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">{list.map(p => <ProductCard key={p.id} product={p} />)}</div>
+      </div>
+    </div>
+  );
+}
+function SearchPage() {
+  const { searchQuery, setSearchQuery, navigate } = useApp();
+  const q = searchQuery.toLowerCase();
+  const prods = PRODUCTS.filter(p => p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q));
+  const stores = SELLERS.filter(s => s.name.toLowerCase().includes(q) || s.category.toLowerCase().includes(q));
+  const svcs = SERVICES.filter(s => s.name.toLowerCase().includes(q) || s.role.toLowerCase().includes(q));
+  return (
+    <div className="pb-24 lg:pb-12">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-5">
+        <div className="flex items-center gap-3 mb-6">
+          <button onClick={() => navigate('home')} className="p-2 rounded-lg hover:bg-neutral-100"><Icon name="chevronL" size={19} /></button>
+          <div className="flex-1 flex items-center bg-white rounded-xl border border-neutral-200 overflow-hidden">
+            <div className="pl-3 text-neutral-400"><Icon name="search" size={17} /></div>
+            <input autoFocus value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search products, shops, services..." className="flex-1 px-3 py-2.5 outline-none text-base" />
+            {searchQuery && <button onClick={() => setSearchQuery('')} className="pr-3 text-neutral-400"><Icon name="x" size={17} /></button>}
+          </div>
+        </div>
+        {!searchQuery ? (
+          <div><p className="text-sm font-medium text-neutral-500 mb-2">Suggested</p>
+            {['charger','football','mechanic near me','room for rent','tutor'].map(s => <button key={s} onClick={() => setSearchQuery(s)} className="block w-full text-left px-4 py-2.5 rounded-xl hover:bg-neutral-50 text-neutral-700">{s}</button>)}
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {prods.length>0 && <div><h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-2">Products</h3>
+              {prods.map(p => { const s=SELLERS.find(x=>x.id===p.sellerId); return (
+                <button key={p.id} onClick={() => navigate('product',{id:p.id})} className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-neutral-50 text-left">
+                  <img src={p.image} alt="" className="w-12 h-12 rounded-lg object-cover" /><div className="flex-1 min-w-0"><p className="font-medium text-sm truncate">{p.name}</p><p className="text-xs text-neutral-500">{formatPrice(p.price)} · {s?.distance} km</p></div>
+                </button>
+              );})}</div>}
+            {stores.length>0 && <div><h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-2">Stores</h3>
+              {stores.map(s => (
+                <button key={s.id} onClick={() => navigate('seller',{id:s.id})} className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-neutral-50 text-left">
+                  <img src={s.image} alt="" className="w-12 h-12 rounded-lg object-cover" /><div><p className="font-medium text-sm">{s.name}</p><p className="text-xs text-neutral-500">{s.distance} km · {s.open?'Open':'Closed'}</p></div>
+                </button>
+              ))}</div>}
+            {svcs.length>0 && <div><h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-2">Services</h3>
+              {svcs.map(s => (
+                <button key={s.id} onClick={() => navigate('hire')} className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-neutral-50 text-left">
+                  <img src={s.image} alt="" className="w-12 h-12 rounded-lg object-cover" /><div><p className="font-medium text-sm">{s.name}</p><p className="text-xs text-neutral-500">{s.role} · {s.distance} km</p></div>
+                </button>
+              ))}</div>}
+            {!prods.length && !stores.length && !svcs.length && <div className="text-center py-12"><p className="text-neutral-500">No results for “{searchQuery}”</p><p className="text-sm text-neutral-400 mt-1">Try “charger” or “mechanic”</p></div>}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ProductPage() {
+  const { params, navigate, addToCart, favorites, toggleFav } = useApp();
+  const product = PRODUCTS.find(p => p.id===params.id) || PRODUCTS[0];
+  const seller = SELLERS.find(s => s.id===product.sellerId);
+  const similar = PRODUCTS.filter(p => p.category===product.category && p.id!==product.id).slice(0,4);
+  const isFav = favorites.includes(product.id);
+  return (
+    <div className="pb-24 lg:pb-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+        <button onClick={() => navigate('explore')} className="flex items-center gap-1 text-sm text-neutral-500 hover:text-neutral-700 mb-3"><Icon name="chevronL" size={15} /> Back</button>
+        <div className="grid lg:grid-cols-2 gap-8">
+          <div className="aspect-square rounded-2xl overflow-hidden bg-neutral-100"><img src={product.image} alt={product.name} className="w-full h-full object-cover" /></div>
+          <div>
+            <p className="text-sm text-neutral-500 mb-0.5">{product.category}</p>
+            <h1 className="font-display font-bold text-2xl sm:text-3xl mb-2">{product.name}</h1>
+            <div className="flex items-center gap-2 mb-3"><Stars rating={product.rating} size={14} /><span className="text-sm text-neutral-500">{product.rating} ({product.reviews})</span></div>
+            <div className="flex items-baseline gap-2 mb-4">
+              <span className="font-display font-bold text-3xl">{formatPrice(product.price)}</span>
+              {product.originalPrice && <span className="text-lg text-neutral-400 line-through">{formatPrice(product.originalPrice)}</span>}
+            </div>
+            <div className="flex flex-wrap gap-2 mb-5">
+              <Badge color="green">In stock · {product.stock}</Badge>
+              <Badge color="blue">Delivery {product.deliveryTime}</Badge>
+              <Badge color="gray">Pickup available</Badge>
+            </div>
+            <p className="text-neutral-600 leading-relaxed mb-6">{product.description}</p>
+            <div onClick={() => navigate('seller',{id:seller.id})} className="flex items-center gap-3 p-3.5 rounded-xl border border-neutral-100 bg-neutral-50 cursor-pointer hover:border-neutral-200 mb-6">
+              <img src={seller.image} alt="" className="w-11 h-11 rounded-full object-cover" />
+              <div className="flex-1"><p className="font-medium">{seller.name}</p><p className="text-sm text-neutral-500">{seller.distance} km · ★ {seller.rating}</p></div>
+              <Icon name="chevronR" size={17} className="text-neutral-400" />
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2.5">
+              <Btn size="lg" className="flex-1" onClick={() => { addToCart(product); navigate('cart'); }}><Icon name="bag" size={17} /> Add to Cart</Btn>
+              <Btn size="lg" variant="dark" className="flex-1" onClick={() => { addToCart(product); navigate('checkout'); }}>Buy Now</Btn>
+              <Btn size="lg" variant="secondary" onClick={() => toggleFav(product.id)}><Icon name="heart" size={17} className={isFav?'text-red-500 fill-red-500':''} /></Btn>
+            </div>
+            <button className="mt-3 w-full flex items-center justify-center gap-2 text-sm text-brand-600 font-medium"><Icon name="msg" size={15} /> Chat with Seller</button>
+          </div>
+        </div>
+        {similar.length>0 && <div className="mt-12"><h2 className="font-display font-bold text-xl mb-4">Similar nearby</h2><div className="grid grid-cols-2 md:grid-cols-4 gap-3">{similar.map(p => <ProductCard key={p.id} product={p} />)}</div></div>}
+      </div>
+    </div>
+  );
+}
+
+function SellerPage() {
+  const { params, navigate } = useApp();
+  const seller = SELLERS.find(s => s.id===params.id) || SELLERS[0];
+  const products = PRODUCTS.filter(p => p.sellerId===seller.id);
+  const [tab, setTab] = useState('shop');
+  return (
+    <div className="pb-24 lg:pb-12">
+      <div className="relative h-36 sm:h-48 bg-neutral-200">
+        <img src={seller.image} alt="" className="w-full h-full object-cover opacity-80" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+        <button onClick={() => navigate('explore')} className="absolute top-3 left-3 w-9 h-9 rounded-full bg-white/90 flex items-center justify-center"><Icon name="chevronL" size={18} /></button>
+      </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-10 relative">
+        <div className="bg-white rounded-2xl border border-neutral-100 shadow-card p-5 mb-5">
+          <div className="flex flex-col sm:flex-row sm:items-start gap-3">
+            <img src={seller.image} alt="" className="w-16 h-16 rounded-2xl object-cover border-4 border-white shadow -mt-1" />
+            <div className="flex-1">
+              <div className="flex flex-wrap items-center gap-2 mb-0.5"><h1 className="font-display font-bold text-xl">{seller.name}</h1><Badge color={seller.open?'green':'gray'}>{seller.open?`Open until ${seller.openUntil}`:seller.openUntil}</Badge></div>
+              <p className="text-sm text-neutral-500 mb-1.5">{seller.category}</p>
+              <div className="flex flex-wrap gap-3 text-sm text-neutral-500">
+                <span className="flex items-center gap-1"><Stars rating={seller.rating} size={12} /> {seller.rating} ({seller.reviews})</span>
+                <span>{seller.distance} km</span>
+                {seller.delivery && <span className="text-brand-600">Delivery</span>}
+                {seller.pickup && <span>Pickup</span>}
+              </div>
+            </div>
+            <div className="flex gap-2"><Btn variant="secondary" size="sm"><Icon name="phone" size={14} /> Call</Btn><Btn size="sm"><Icon name="msg" size={14} /> Message</Btn></div>
+          </div>
+        </div>
+        <div className="flex gap-1 border-b border-neutral-100 mb-5">
+          {['shop','reviews','about'].map(t => <button key={t} onClick={() => setTab(t)} className={cn('px-4 py-2 text-sm font-medium capitalize border-b-2 -mb-px transition', tab===t?'border-brand-600 text-brand-600':'border-transparent text-neutral-500')}>{t}</button>)}
+        </div>
+        {tab==='shop' && <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">{products.length ? products.map(p => <ProductCard key={p.id} product={p} />) : <p className="text-neutral-500 col-span-full py-6 text-center">No products yet.</p>}</div>}
+        {tab==='reviews' && <div className="space-y-3 max-w-2xl">{[{name:'Suman K.',rating:5,text:'Great quality. Delivery in 40 min.',time:'2 days ago'},{name:'Anisha R.',rating:4,text:'Good selection and helpful staff.',time:'1 week ago'}].map((r,i)=>(
+          <div key={i} className="bg-white rounded-xl border border-neutral-100 p-4"><div className="flex justify-between mb-1"><span className="font-medium">{r.name}</span><span className="text-xs text-neutral-400">{r.time}</span></div><Stars rating={r.rating} size={12} /><p className="text-sm text-neutral-600 mt-1.5">{r.text}</p></div>
+        ))}</div>}
+        {tab==='about' && <div className="max-w-2xl bg-white rounded-xl border border-neutral-100 p-5"><p className="text-neutral-600 mb-3">{seller.about}</p><p className="text-sm text-neutral-500">{seller.address}</p><p className="text-sm text-neutral-500 mt-0.5">{seller.phone}</p></div>}
+      </div>
+    </div>
+  );
+}
+function CartPage() {
+  const { cart, updateQty, removeFromCart, cartTotal, navigate } = useApp();
+  const fee = cart.length ? 150 : 0;
+  const total = cartTotal + fee;
+  if (!cart.length) return (
+    <div className="pb-24 min-h-[55vh] flex flex-col items-center justify-center px-4">
+      <div className="w-14 h-14 rounded-full bg-neutral-100 flex items-center justify-center mb-3"><Icon name="bag" size={26} className="text-neutral-400" /></div>
+      <h2 className="font-display font-semibold text-xl mb-1">Your cart is empty</h2>
+      <p className="text-neutral-500 mb-5 text-center">Discover products from shops around you</p>
+      <Btn onClick={() => navigate('explore')}>Start shopping</Btn>
+    </div>
+  );
+  return (
+    <div className="pb-24 lg:pb-12">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-7">
+        <h1 className="font-display font-bold text-2xl sm:text-3xl mb-6">Cart</h1>
+        <div className="space-y-3 mb-6">
+          {cart.map(item => {
+            const seller = SELLERS.find(s => s.id===item.sellerId);
+            return (
+              <div key={item.id} className="bg-white rounded-2xl border border-neutral-100 p-3.5 flex gap-3">
+                <img src={item.image} alt="" className="w-18 h-18 rounded-xl object-cover w-[72px] h-[72px]" />
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-medium text-sm truncate">{item.name}</h3>
+                  <p className="text-xs text-neutral-500">{seller?.name} · {seller?.distance} km</p>
+                  <p className="font-semibold text-sm mt-0.5">{formatPrice(item.price)}</p>
+                  <div className="flex items-center gap-2.5 mt-1.5">
+                    <div className="flex items-center border border-neutral-200 rounded-lg">
+                      <button onClick={() => updateQty(item.id, item.qty-1)} className="w-7 h-7 flex items-center justify-center text-neutral-500"><Icon name="minus" size={13} /></button>
+                      <span className="w-7 text-center text-sm font-medium">{item.qty}</span>
+                      <button onClick={() => updateQty(item.id, item.qty+1)} className="w-7 h-7 flex items-center justify-center text-neutral-500"><Icon name="plus" size={13} /></button>
+                    </div>
+                    <button onClick={() => removeFromCart(item.id)} className="text-xs text-red-500">Remove</button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div className="bg-white rounded-2xl border border-neutral-100 p-4 mb-5">
+          <div className="flex justify-between text-sm mb-1.5"><span className="text-neutral-500">Subtotal</span><span className="font-medium">{formatPrice(cartTotal)}</span></div>
+          <div className="flex justify-between text-sm mb-1.5"><span className="text-neutral-500">Delivery</span><span className="font-medium">{formatPrice(fee)}</span></div>
+          <div className="border-t border-neutral-100 pt-2.5 mt-2.5 flex justify-between"><span className="font-semibold">Total</span><span className="font-display font-bold text-lg">{formatPrice(total)}</span></div>
+          <p className="text-xs text-neutral-400 mt-1.5">Estimated arrival: 30–60 min</p>
+        </div>
+        <Btn size="xl" className="w-full" onClick={() => navigate('checkout')}>Continue to Checkout</Btn>
+      </div>
+    </div>
+  );
+}
+
+function CheckoutPage() {
+  const { cart, cartTotal, navigate, user, setShowAuth } = useApp();
+  const [payment, setPayment] = useState('cod');
+  const [address, setAddress] = useState('Campus Road, Dhangadhi');
+  const fee = 150;
+  const total = cartTotal + fee;
+  if (!cart.length) { navigate('cart'); return null; }
+  return (
+    <div className="pb-24 lg:pb-12">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-7">
+        <h1 className="font-display font-bold text-2xl sm:text-3xl mb-6">Checkout</h1>
+        <div className="space-y-4">
+          <div className="bg-white rounded-2xl border border-neutral-100 p-4">
+            <h3 className="font-semibold mb-2">Delivery address</h3>
+            <input value={address} onChange={e => setAddress(e.target.value)} className="w-full px-3.5 py-2.5 border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500" />
+          </div>
+          <div className="bg-white rounded-2xl border border-neutral-100 p-4">
+            <h3 className="font-semibold mb-2">Contact</h3>
+            <input defaultValue={user?.phone||''} placeholder="98XXXXXXXX" className="w-full px-3.5 py-2.5 border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500" />
+          </div>
+          <div className="bg-white rounded-2xl border border-neutral-100 p-4">
+            <h3 className="font-semibold mb-2">Payment method</h3>
+            <div className="space-y-1.5">
+              {[{id:'cod',label:'Cash on Delivery',desc:'Pay when you receive'},{id:'esewa',label:'eSewa',desc:'Digital wallet'},{id:'khalti',label:'Khalti',desc:'Digital wallet'},{id:'qr',label:'QR / Bank Transfer',desc:'Scan or transfer'}].map(m => (
+                <button key={m.id} onClick={() => setPayment(m.id)} className={cn('w-full flex items-center gap-3 p-3 rounded-xl border text-left transition', payment===m.id?'border-brand-500 bg-brand-50':'border-neutral-100')}>
+                  <div className={cn('w-4.5 h-4.5 rounded-full border-2 flex items-center justify-center', payment===m.id?'border-brand-600':'border-neutral-300')}>{payment===m.id && <div className="w-2 h-2 rounded-full bg-brand-600" />}</div>
+                  <div><p className="font-medium text-sm">{m.label}</p><p className="text-xs text-neutral-500">{m.desc}</p></div>
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="bg-white rounded-2xl border border-neutral-100 p-4">
+            <h3 className="font-semibold mb-2">Order summary</h3>
+            {cart.map(i => <div key={i.id} className="flex justify-between text-sm mb-1"><span className="text-neutral-600">{i.name} × {i.qty}</span><span className="font-medium">{formatPrice(i.price*i.qty)}</span></div>)}
+            <div className="flex justify-between text-sm mt-2.5 pt-2.5 border-t border-neutral-100"><span className="text-neutral-500">Delivery</span><span>{formatPrice(fee)}</span></div>
+            <div className="flex justify-between font-semibold mt-1.5"><span>Total</span><span className="font-display text-lg">{formatPrice(total)}</span></div>
+          </div>
+          <Btn size="xl" className="w-full" onClick={() => { if(!user){setShowAuth(true);return;} navigate('tracking',{id:'EP10284'}); }}>Place Order · {formatPrice(total)}</Btn>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TrackingPage() {
+  const { params, navigate } = useApp();
+  const order = ORDERS.find(o => o.id===params.id) || ORDERS[0];
+  const steps = [{key:'placed',label:'Order placed'},{key:'accepted',label:'Seller accepted'},{key:'preparing',label:'Preparing'},{key:'rider_assigned',label:'Rider assigned'},{key:'out_for_delivery',label:'Out for delivery'},{key:'delivered',label:'Delivered'}];
+  const idx = steps.findIndex(s => s.key===order.status);
+  return (
+    <div className="pb-24 lg:pb-12">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 pt-7">
+        <button onClick={() => navigate('orders')} className="flex items-center gap-1 text-sm text-neutral-500 mb-5"><Icon name="chevronL" size={15} /> Orders</button>
+        <div className="bg-white rounded-2xl border border-neutral-100 p-5 mb-5">
+          <div className="flex items-center justify-between mb-0.5"><h1 className="font-display font-bold text-xl">Order #{order.id}</h1><Badge color="blue">{order.eta?`ETA ${order.eta}`:'Delivered'}</Badge></div>
+          <p className="text-sm text-neutral-500 mb-5">{order.seller}</p>
+          {steps.map((step,i) => {
+            const done = i <= idx;
+            return (
+              <div key={step.key} className="flex gap-3">
+                <div className="flex flex-col items-center">
+                  <div className={cn('w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium', done?'bg-brand-600 text-white':'bg-neutral-100 text-neutral-400')}>{done?<Icon name="check" size={14}/>:i+1}</div>
+                  {i<steps.length-1 && <div className={cn('w-0.5 h-8', done&&i<idx?'bg-brand-600':'bg-neutral-100')} />}
+                </div>
+                <div className="pt-1 pb-5"><p className={cn('font-medium text-sm', done?'text-neutral-900':'text-neutral-400')}>{step.label}</p>{i===idx&&order.eta&&<p className="text-xs text-brand-600 mt-0.5">Estimated {order.eta}</p>}</div>
+              </div>
+            );
+          })}
+        </div>
+        <div className="relative h-40 rounded-2xl overflow-hidden border border-neutral-100 bg-brand-50 map-grid mb-5 flex items-center justify-center">
+          <div className="text-center"><div className="w-9 h-9 rounded-full bg-brand-600 text-white flex items-center justify-center mx-auto mb-1.5 shadow-lg"><Icon name="bike" size={16} /></div><p className="text-sm font-medium">Live tracking</p><p className="text-xs text-neutral-500">Rider is on the way</p></div>
+        </div>
+        {order.rider && (
+          <div className="bg-white rounded-2xl border border-neutral-100 p-4 flex items-center gap-3">
+            <div className="w-11 h-11 rounded-full bg-neutral-100 flex items-center justify-center text-lg font-semibold text-neutral-600">{order.rider.name[0]}</div>
+            <div className="flex-1"><p className="font-medium">{order.rider.name}</p><p className="text-sm text-neutral-500">★ {order.rider.rating} · {order.rider.vehicle}</p></div>
+            <div className="flex gap-1.5"><Btn variant="secondary" size="sm"><Icon name="phone" size={14} /></Btn><Btn variant="secondary" size="sm"><Icon name="msg" size={14} /></Btn></div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+function RentPage() {
+  const [cat, setCat] = useState('All');
+  const cats = ['All','Rooms','Bikes','Cars','Cameras','Equipment','Events'];
+  const list = cat==='All' ? RENTALS : RENTALS.filter(r => r.category===cat);
+  return (
+    <div className="pb-24 lg:pb-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-7">
+        <h1 className="font-display font-bold text-3xl mb-1">Rent what you need.</h1>
+        <p className="text-neutral-500 mb-6">Rooms, vehicles, equipment — available nearby</p>
+        <div className="flex gap-2 overflow-x-auto no-scrollbar mb-6">{cats.map(c => <button key={c} onClick={() => setCat(c)} className={cn('px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap', cat===c?'bg-neutral-900 text-white':'bg-white border border-neutral-200 text-neutral-600')}>{c}</button>)}</div>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {list.map(r => (
+            <div key={r.id} className="bg-white rounded-2xl border border-neutral-100 overflow-hidden shadow-card hover:shadow-elevated transition group">
+              <div className="relative aspect-[4/3] overflow-hidden">
+                <img src={r.image} alt={r.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                {!r.available && <div className="absolute inset-0 bg-black/40 flex items-center justify-center"><Badge color="red">Unavailable</Badge></div>}
+              </div>
+              <div className="p-3.5">
+                <div className="flex justify-between gap-2 mb-0.5"><h3 className="font-medium">{r.name}</h3><span className="font-semibold whitespace-nowrap text-sm">{formatPrice(r.price)}<span className="text-xs font-normal text-neutral-500">/{r.unit}</span></span></div>
+                <p className="text-sm text-neutral-500 mb-1">{r.location} · {r.distance} km · ★ {r.rating}</p>
+                <p className="text-xs text-neutral-400">by {r.owner}</p>
+                {r.available && <Btn size="sm" className="w-full mt-2.5" onClick={() => alert('Rental request sent (prototype)')}>Request to rent</Btn>}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HirePage() {
+  const [cat, setCat] = useState('All');
+  const cats = ['All','Mechanic','Electrician','Plumber','Tutor','Photographer','Designer'];
+  const list = cat==='All' ? SERVICES : SERVICES.filter(s => s.role.toLowerCase().includes(cat.toLowerCase()));
+  return (
+    <div className="pb-24 lg:pb-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-7">
+        <h1 className="font-display font-bold text-3xl mb-1">Hire someone nearby.</h1>
+        <p className="text-neutral-500 mb-6">Trusted local professionals</p>
+        <div className="flex gap-2 overflow-x-auto no-scrollbar mb-6">{cats.map(c => <button key={c} onClick={() => setCat(c)} className={cn('px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap', cat===c?'bg-neutral-900 text-white':'bg-white border border-neutral-200 text-neutral-600')}>{c}</button>)}</div>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {list.map(s => (
+            <div key={s.id} className="bg-white rounded-2xl border border-neutral-100 p-4 shadow-card hover:shadow-elevated transition">
+              <div className="flex gap-3">
+                <img src={s.image} alt="" className="w-14 h-14 rounded-xl object-cover flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="flex justify-between gap-1"><div><h3 className="font-medium text-sm">{s.name}</h3><p className="text-xs text-neutral-500">{s.role}</p></div><Badge color={s.available?'green':'gray'}>{s.available?'Available':'Busy'}</Badge></div>
+                  <div className="flex items-center gap-1.5 mt-1 text-xs text-neutral-500"><span>★ {s.rating}</span><span>·</span><span>{s.distance} km</span><span>·</span><span>from {formatPrice(s.priceFrom)}</span></div>
+                  <div className="flex flex-wrap gap-1 mt-1.5">{s.tags.map(t => <span key={t} className="text-[10px] bg-neutral-50 text-neutral-600 px-1.5 py-0.5 rounded">{t}</span>)}</div>
+                </div>
+              </div>
+              <div className="flex gap-1.5 mt-3"><Btn size="sm" variant="secondary" className="flex-1"><Icon name="phone" size={13} /> Call</Btn><Btn size="sm" variant="secondary" className="flex-1"><Icon name="msg" size={13} /> Message</Btn><Btn size="sm" className="flex-1" disabled={!s.available}>Request</Btn></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FindPage() {
+  const { location, navigate } = useApp();
+  const items = [{label:'Find a shop',icon:'store',page:'explore'},{label:'Find a service',icon:'tool',page:'hire'},{label:'Find a room',icon:'key',page:'rent'},{label:'Find a mechanic',icon:'bike',page:'hire'},{label:'Find a tutor',icon:'users',page:'hire'},{label:'Find equipment',icon:'camera',page:'rent'}];
+  return (
+    <div className="pb-24 lg:pb-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-7">
+        <h1 className="font-display font-bold text-3xl mb-1">Discover around you</h1>
+        <p className="text-neutral-500 mb-6">Hyperlocal network for {location.name}</p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 mb-8">
+          {items.map(d => (
+            <button key={d.label} onClick={() => navigate(d.page)} className="bg-white rounded-2xl border border-neutral-100 p-4 text-left shadow-card hover:shadow-elevated hover:-translate-y-0.5 transition-all">
+              <div className="w-9 h-9 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center mb-2.5"><Icon name={d.icon} size={18} /></div>
+              <p className="font-medium text-sm">{d.label}</p>
+            </button>
+          ))}
+        </div>
+        <div className="grid lg:grid-cols-5 gap-5">
+          <div className="lg:col-span-3 relative h-64 sm:h-80 rounded-2xl overflow-hidden border border-neutral-100 bg-brand-50 map-grid">
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-center"><div className="w-12 h-12 rounded-full bg-brand-600 text-white flex items-center justify-center mx-auto mb-2 shadow-lg animate-pulse-soft"><Icon name="mapPin" size={22} /></div><p className="font-medium">{location.name}</p><p className="text-sm text-neutral-500">{SELLERS.length} places nearby</p></div>
+            </div>
+            {SELLERS.slice(0,5).map((s,i) => <div key={s.id} className="absolute w-2.5 h-2.5 rounded-full border-2 border-white shadow" style={{background:['#6366f1','#10b981','#f59e0b','#8b5cf6','#ef4444'][i], top:`${20+i*11}%`, left:`${25+(i%3)*18}%`}} />)}
+          </div>
+          <div className="lg:col-span-2 space-y-2 max-h-80 overflow-y-auto">
+            {SELLERS.map(s => (
+              <div key={s.id} onClick={() => navigate('seller',{id:s.id})} className="bg-white rounded-xl border border-neutral-100 p-2.5 flex gap-2.5 cursor-pointer hover:border-brand-200 transition">
+                <img src={s.image} alt="" className="w-12 h-12 rounded-lg object-cover" />
+                <div className="flex-1 min-w-0"><p className="font-medium text-sm truncate">{s.name}</p><p className="text-xs text-neutral-500">{s.distance} km · {s.open?'Open':'Closed'}</p><div className="flex gap-1.5 mt-0.5">{s.delivery&&<span className="text-[10px] text-brand-600">Delivery</span>}{s.pickup&&<span className="text-[10px] text-neutral-500">Pickup</span>}</div></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function OrdersPage() {
+  const { navigate } = useApp();
+  return (
+    <div className="pb-24 lg:pb-12">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-7">
+        <h1 className="font-display font-bold text-2xl sm:text-3xl mb-6">Orders</h1>
+        <div className="space-y-3">
+          {ORDERS.map(o => (
+            <div key={o.id} onClick={() => navigate('tracking',{id:o.id})} className="bg-white rounded-2xl border border-neutral-100 p-4 cursor-pointer hover:shadow-card transition">
+              <div className="flex justify-between mb-1"><span className="font-medium">#{o.id}</span><Badge color={o.status==='delivered'?'green':'blue'}>{o.status==='delivered'?'Delivered':'In progress'}</Badge></div>
+              <p className="text-sm text-neutral-500 mb-1">{o.seller}</p>
+              <p className="text-sm text-neutral-600">{o.items.map(i=>i.name).join(', ')}</p>
+              <div className="flex justify-between mt-2.5 pt-2.5 border-t border-neutral-50"><span className="font-semibold text-sm">{formatPrice(o.total)}</span><span className="text-xs text-neutral-400">{new Date(o.placedAt).toLocaleDateString()}</span></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProfilePage() {
+  const { user, setUser, setShowAuth, navigate } = useApp();
+  if (!user) return (
+    <div className="pb-24 min-h-[55vh] flex flex-col items-center justify-center px-4">
+      <div className="w-14 h-14 rounded-full bg-neutral-100 flex items-center justify-center mb-3"><Icon name="user" size={26} className="text-neutral-400" /></div>
+      <h2 className="font-display font-semibold text-xl mb-1">Sign in to continue</h2>
+      <p className="text-neutral-500 mb-5 text-center">Track orders, save favorites and more</p>
+      <Btn onClick={() => setShowAuth(true)}>Sign in with phone</Btn>
+    </div>
+  );
+  const menu = [
+    {label:'Orders',icon:'package',page:'orders'},{label:'Rentals',icon:'key',page:'rent'},{label:'Saved items',icon:'heart',page:'explore'},
+    {label:'Messages',icon:'msg',page:'messages'},{label:'Addresses',icon:'mapPin',page:'profile'},{label:'Settings',icon:'settings',page:'profile'},
+    {label:'Seller dashboard',icon:'barChart',page:'seller-dashboard'},{label:'Rider dashboard',icon:'bike',page:'rider-dashboard'},
+  ];
+  return (
+    <div className="pb-24 lg:pb-12">
+      <div className="max-w-lg mx-auto px-4 sm:px-6 pt-7">
+        <div className="flex items-center gap-3.5 mb-6">
+          <div className="w-14 h-14 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center text-xl font-semibold">{user.name[0]}</div>
+          <div><h1 className="font-display font-bold text-xl">{user.name}</h1><p className="text-sm text-neutral-500">+977 {user.phone}</p></div>
+        </div>
+        <div className="bg-white rounded-2xl border border-neutral-100 overflow-hidden mb-5">
+          {menu.map((m,i) => (
+            <button key={m.label} onClick={() => navigate(m.page)} className={cn('w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-neutral-50 transition', i>0&&'border-t border-neutral-50')}>
+              <Icon name={m.icon} size={17} className="text-neutral-400" /><span className="flex-1 font-medium text-sm">{m.label}</span><Icon name="chevronR" size={15} className="text-neutral-300" />
+            </button>
+          ))}
+        </div>
+        <Btn variant="outline" className="w-full" onClick={() => setUser(null)}><Icon name="logOut" size={15} /> Sign out</Btn>
+      </div>
+    </div>
+  );
+}
+
+function NotificationsPage() {
+  const { notifications, setNotifications } = useApp();
+  return (
+    <div className="pb-24 lg:pb-12">
+      <div className="max-w-lg mx-auto px-4 sm:px-6 pt-7">
+        <div className="flex items-center justify-between mb-5"><h1 className="font-display font-bold text-2xl">Notifications</h1>
+          <button onClick={() => setNotifications(n => n.map(x=>({...x,read:true})))} className="text-sm text-brand-600 font-medium">Mark all read</button></div>
+        <div className="space-y-2">{notifications.map(n => (
+          <div key={n.id} className={cn('p-3.5 rounded-xl border transition', n.read?'bg-white border-neutral-100':'bg-brand-50 border-brand-100')}>
+            <p className="font-medium text-sm">{n.title}</p><p className="text-sm text-neutral-600 mt-0.5">{n.body}</p><p className="text-xs text-neutral-400 mt-1.5">{n.time}</p>
+          </div>
+        ))}</div>
+      </div>
+    </div>
+  );
+}
+
+function MessagesPage() {
+  return (
+    <div className="pb-24 min-h-[45vh] flex flex-col items-center justify-center px-4">
+      <Icon name="msg" size={30} className="text-neutral-300 mb-2" />
+      <h2 className="font-display font-semibold text-lg mb-0.5">Messages</h2>
+      <p className="text-sm text-neutral-500 text-center">Chat with sellers and service providers will appear here</p>
+    </div>
+  );
+}
+
+function SellerDashboard() {
+  const { navigate } = useApp();
+  return (
+    <div className="min-h-screen bg-neutral-50 flex">
+      <aside className="hidden lg:flex w-56 flex-col bg-white border-r border-neutral-100 fixed h-full">
+        <div className="p-4 border-b border-neutral-100"><button onClick={() => navigate('home')} className="flex items-center gap-2"><div className="w-6 h-6 rounded-md bg-brand-600 text-white flex items-center justify-center text-xs font-bold">e</div><span className="font-display font-bold text-sm">ePasal Seller</span></button></div>
+        <nav className="flex-1 p-2.5 space-y-0.5">
+          {['Dashboard','Orders','Products','Inventory','Customers','Messages','Analytics','Settings'].map((m,i) => (
+            <button key={m} className={cn('w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition', i===0?'bg-brand-50 text-brand-700':'text-neutral-600 hover:bg-neutral-50')}>{m}</button>
+          ))}
+        </nav>
+      </aside>
+      <main className="flex-1 lg:ml-56 p-5 lg:p-7">
+        <div className="flex items-center justify-between mb-6"><div><h1 className="font-display font-bold text-2xl">Dashboard</h1><p className="text-sm text-neutral-500">New Star Sports · Today</p></div><Btn size="sm" onClick={() => navigate('home')}>Back to marketplace</Btn></div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+          {[{label:"Today's sales",value:'Rs. 18,450',c:'+12%'},{label:'Orders',value:'32',c:'+5'},{label:'Products',value:'126',c:''},{label:'Customers',value:'48',c:'+3'}].map(m => (
+            <div key={m.label} className="bg-white rounded-2xl border border-neutral-100 p-4"><p className="text-xs text-neutral-500 mb-0.5">{m.label}</p><p className="font-display font-bold text-xl">{m.value}</p>{m.c&&<p className="text-xs text-emerald-600 mt-0.5">{m.c}</p>}</div>
+          ))}
+        </div>
+        <div className="bg-white rounded-2xl border border-neutral-100 p-5 mb-5">
+          <h3 className="font-semibold mb-3">Sales this week</h3>
+          <div className="flex items-end gap-1.5 h-28">{[40,65,45,80,55,90,70].map((h,i)=>(
+            <div key={i} className="flex-1 flex flex-col items-center gap-1"><div className="w-full bg-brand-500 rounded-t" style={{height:`${h}%`}} /><span className="text-[10px] text-neutral-400">{['M','T','W','T','F','S','S'][i]}</span></div>
+          ))}</div>
+        </div>
+        <div className="bg-white rounded-2xl border border-neutral-100 p-5">
+          <h3 className="font-semibold mb-3">Recent orders</h3>
+          {[{id:'EP10284',item:'20W iPhone Charger',amount:1499,status:'Preparing'},{id:'EP10283',item:'Nike Football Boots',amount:4500,status:'Delivered'}].map(o => (
+            <div key={o.id} className="flex items-center justify-between py-2 border-b border-neutral-50 last:border-0">
+              <div><p className="font-medium text-sm">{o.id}</p><p className="text-xs text-neutral-500">{o.item}</p></div>
+              <div className="text-right"><p className="font-medium text-sm">{formatPrice(o.amount)}</p><Badge color={o.status==='Delivered'?'green':'blue'}>{o.status}</Badge></div>
+            </div>
+          ))}
+        </div>
+      </main>
+    </div>
+  );
+}
+
+function RiderDashboard() {
+  const { navigate } = useApp();
+  return (
+    <div className="pb-24 lg:pb-12">
+      <div className="max-w-lg mx-auto px-4 sm:px-6 pt-7">
+        <div className="flex items-center justify-between mb-5"><div><h1 className="font-display font-bold text-2xl">Rider</h1><p className="text-sm text-neutral-500">Prakash · Online</p></div><Btn size="sm" variant="secondary" onClick={() => navigate('home')}>Exit</Btn></div>
+        <div className="grid grid-cols-2 gap-2.5 mb-5">
+          <div className="bg-white rounded-2xl border border-neutral-100 p-3.5"><p className="text-xs text-neutral-500">Today's earnings</p><p className="font-display font-bold text-lg mt-0.5">Rs. 2,450</p></div>
+          <div className="bg-white rounded-2xl border border-neutral-100 p-3.5"><p className="text-xs text-neutral-500">Deliveries</p><p className="font-display font-bold text-lg mt-0.5">7</p></div>
+        </div>
+        <div className="bg-white rounded-2xl border border-brand-200 p-4 mb-5 shadow-card">
+          <Badge color="blue">Active delivery</Badge>
+          <h3 className="font-semibold mt-1.5 mb-0.5">Order #EP10284</h3>
+          <p className="text-sm text-neutral-500 mb-3">Mobile World → Campus Road</p>
+          <div className="relative h-28 rounded-xl bg-brand-50 map-grid mb-3 flex items-center justify-center"><div className="text-center"><Icon name="nav" size={22} className="text-brand-600 mx-auto mb-0.5" /><p className="text-xs text-neutral-600">1.2 km remaining</p></div></div>
+          <div className="space-y-1 text-sm mb-3"><div className="flex justify-between"><span className="text-neutral-500">Pickup</span><span className="font-medium">Mobile World</span></div><div className="flex justify-between"><span className="text-neutral-500">Drop-off</span><span className="font-medium">Campus Road</span></div></div>
+          <div className="flex gap-1.5"><Btn size="sm" variant="secondary" className="flex-1"><Icon name="phone" size={13} /> Call</Btn><Btn size="sm" className="flex-1">Mark picked up</Btn></div>
+        </div>
+        <h3 className="font-semibold mb-2.5">Available nearby</h3>
+        <div className="space-y-2.5">
+          {[{id:'EP10290',from:'New Star Sports',to:'Attariya',fee:180,dist:'2.1 km'},{id:'EP10291',from:'Fresh Mart',to:'Godawari',fee:220,dist:'3.4 km'}].map(d => (
+            <div key={d.id} className="bg-white rounded-xl border border-neutral-100 p-3.5 flex items-center justify-between">
+              <div><p className="font-medium text-sm">{d.id}</p><p className="text-xs text-neutral-500">{d.from} → {d.to} · {d.dist}</p></div>
+              <div className="text-right"><p className="font-semibold text-sm">{formatPrice(d.fee)}</p><Btn size="sm" className="mt-1">Accept</Btn></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  const { page } = useApp();
+  const pages = { home:HomePage, explore:ExplorePage, search:SearchPage, product:ProductPage, seller:SellerPage, cart:CartPage, checkout:CheckoutPage, tracking:TrackingPage, rent:RentPage, hire:HirePage, find:FindPage, orders:OrdersPage, profile:ProfilePage, notifications:NotificationsPage, messages:MessagesPage, 'seller-dashboard':SellerDashboard, 'rider-dashboard':RiderDashboard };
+  const Page = pages[page] || HomePage;
+  const isDash = page==='seller-dashboard' || page==='rider-dashboard';
+  return (
+    <div className="min-h-screen">
+      {!isDash && <Navbar />}
+      <Page />
+      {!isDash && <MobileNav />}
+      <LocationModal />
+      <AuthModal />
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<AppProvider><App /></AppProvider>);
+</script>
+</body>
+</html>
